@@ -1,15 +1,16 @@
 # FreelanceOS
 
-A personal freelance management system for web development client acquisition.
+A personal freelance management system for web development client acquisition and project tracking.
 
 ## Tech Stack
 
-- **Frontend/Backend**: Next.js 14 (App Router)
-- **Database**: MongoDB + Mongoose
+- **Framework**: Next.js 14 (App Router)
+- **Database & Auth**: Supabase (PostgreSQL)
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
 - **Data Fetching**: SWR
 - **Drag & Drop**: @hello-pangea/dnd
+- **Styling**: Vanilla CSS / Tailwind CSS
 
 ## Setup
 
@@ -18,16 +19,14 @@ A personal freelance management system for web development client acquisition.
 npm install
 ```
 
-### 2. Configure MongoDB
+### 2. Configure Supabase
 
-Edit `.env.local` and set your MongoDB connection string:
+1. Create a project at [Supabase](https://supabase.com/)
+2. Set up your database tables and RLS policies using the provided SQL files in the `supabase/` directory (`supabase/schema.sql` and `supabase/rls_policies.sql`).
+3. Edit your environment variables (e.g., create an `.env.local` file) to include your Supabase credentials:
 ```
-MONGODB_URI=mongodb://localhost:27017/freelanceos
-```
-
-For **MongoDB Atlas** (cloud), replace with your Atlas URI:
-```
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/freelanceos
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ### 3. Start the dev server
@@ -40,17 +39,18 @@ Visit [http://localhost:3000](http://localhost:3000)
 
 ## Features
 
+- **Authentication** — Secure login protecting all dashboard routes
 - **Dashboard** — Animated weekly metrics, daily tracker (+/−), pipeline overview, quick notes
-- **Leads** — Full lead management with stage pipeline, search/filter, CSV export, Instagram links
-- **Pipeline** — Drag-and-drop Kanban board across 8 stages
-- **Projects** — Client project tracking with deadline countdown rings and payment status
+- **Leads** — Full lead management with stage pipeline, search/filter, update tracking
+- **Pipeline** — Drag-and-drop Kanban board across multiple acquisition stages
+- **Projects** — Client project tracking with deadline countdowns and progress metrics
 - **Strategy** — Full DM outreach framework with templates and funnel math
-- **Planner** — 7-day weekly execution schedule with Instagram safety rules
-- **Settings** — Editable goal targets stored in MongoDB
+- **Planner** — Weekly execution schedule to stay consistent
+- **Settings** — Editable user preferences and persistent configuration
 
-## Running with MongoDB Atlas (Cloud)
+## Architecture
 
-1. Create a free cluster at [mongodb.com/atlas](https://mongodb.com/atlas)
-2. Get your connection string
-3. Set it in `.env.local`
-4. No other changes needed — Mongoose handles everything
+This project is built using server-side Next.js features and integrates heavily with Supabase.
+- **Supabase Auth**: Authenticating users via email or magic links. All protected pages exist under the `(app)` route group, with middleware intercepting unauthenticated sessions.
+- **Row Level Security (RLS)**: Enforced at the database level to ensure data privacy per user session.
+- **Supabase SSR**: Utility clients located in `lib/` to fetch data safely on the server and efficiently in browser components.
