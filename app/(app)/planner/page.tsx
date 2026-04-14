@@ -2,8 +2,7 @@
 
 import { motion } from "framer-motion";
 import { AlertTriangle, CheckCircle, Clock, Flame } from "lucide-react";
-import { useState } from "react";
-import { EnergyMode } from "@/components/features/EnergyMode";
+import { useFocusTimer } from "@/components/features/FocusContext";
 import { useLeads } from "@/hooks/useLeads";
 import { useProjects } from "@/hooks/useProjects";
 import { useDaily, useSettings } from "@/hooks/useDaily";
@@ -38,54 +37,27 @@ const SAFETY_RULES = [
 
 export default function PlannerPage() {
   const today = new Date().toLocaleDateString("en-IN", { weekday: "long" }).slice(0, 3);
-  const [energyModeOpen, setEnergyModeOpen] = useState(false);
+  const { startSession } = useFocusTimer();
 
-  const { leads } = useLeads();
-  const { projects } = useProjects();
   const { entries } = useDaily();
   const { settings } = useSettings();
   const goals = settings || DEFAULT_GOALS;
 
   const ws = weekStartISO();
-  const todayIso = todayISO();
   const weekEntries = entries.filter(e => e.date >= ws);
   const wkDMs = weekEntries.reduce((s, e) => s + (e.dms || 0), 0);
   const goalDMs = goals.weeklyDMs;
   const progress = pct(wkDMs, goalDMs);
 
-  const dailyLogsParsed = entries.map(e => ({
-    id: e.date,
-    user_id: "",
-    log_date: e.date,
-    dms: e.dms || 0,
-    replies: e.replies || 0,
-    leads_qualified: e.leads || 0,
-    calls_booked: e.calls || 0,
-    clients_closed: 0,
-    revenue_earned: 0,
-    note: "",
-    created_at: e.date,
-    updated_at: e.date
-  }));
-
   return (
     <div style={{ paddingTop: 24 }}>
-      {energyModeOpen && (
-        <EnergyMode
-          onClose={() => setEnergyModeOpen(false)}
-          leads={leads}
-          projects={projects}
-          dailyLog={dailyLogsParsed.find(d => d.log_date === todayIso)}
-        />
-      )}
-
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
         <div>
           <div className="page-title">Weekly Planner</div>
           <div className="page-sub">7-day execution schedule · 90 mins/day · {goalDMs}+ DMs/week</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-          <button className="btn btn-primary" onClick={() => setEnergyModeOpen(true)} style={{ background: '#f97316' }}>
+          <button className="btn btn-primary" onClick={startSession} style={{ background: '#f97316' }}>
             <Flame size={14} /> Start Focus Session
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

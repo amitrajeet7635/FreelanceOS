@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { useInterval } from "@/hooks/useInterval";
 import { useLeads } from "@/hooks/useLeads";
 import { useProjects } from "@/hooks/useProjects";
@@ -44,6 +44,12 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   }, 1000);
 
   const startSession = () => {
+    if (isActive) {
+      setMinimized(false);
+      setIsRunning(true);
+      return;
+    }
+
     setIsActive(true);
     setMinimized(false);
     setTimeLeft(90 * 60);
@@ -71,7 +77,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
 export const useFocusTimer = () => useContext(FocusContext);
 
 function GlobalFocusRenderer() {
-  const { isMinimized, setMinimized, endSession, timeLeft, isRunning, setIsRunning } = useFocusTimer();
+  const { isMinimized, setMinimized, endSession, timeLeft, isRunning, setIsRunning, sessionStats, setSessionStats } = useFocusTimer();
   const { leads = [] } = useLeads();
   const { projects = [] } = useProjects();
   const { entries = [] } = useDaily();
@@ -144,6 +150,12 @@ function GlobalFocusRenderer() {
       leads={leads}
       projects={projects}
       dailyLog={adaptedLog}
+      timeLeft={timeLeft}
+      isRunning={isRunning}
+      onToggleRunning={() => setIsRunning(!isRunning)}
+      onEndSession={endSession}
+      sessionStats={sessionStats}
+      setSessionStats={setSessionStats}
     />
   );
 }

@@ -3,8 +3,21 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { action, field } = body;
-  // action = 'increment', field = 'dms' | 'replies' etc
+  const { field } = body;
+  // field = 'dms' | 'replies' | 'leads_qualified' | 'calls_booked' | 'clients_closed' | 'revenue_earned'
+
+  const ALLOWED_FIELDS = [
+    "dms",
+    "replies",
+    "leads_qualified",
+    "calls_booked",
+    "clients_closed",
+    "revenue_earned",
+  ] as const;
+
+  if (!ALLOWED_FIELDS.includes(field)) {
+    return NextResponse.json({ error: "Invalid field" }, { status: 400 });
+  }
   
   const supabase = createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
@@ -21,9 +34,11 @@ export async function POST(req: Request) {
     .single();
 
   if (existing) {
+    const currentValue = Number(((existing as unknown as Record<string, unknown>)[field]) ?? 0);
+
     const { data, error } = await supabase
       .from("daily_logs")
-      .update({ [field]: (existing[field] || 0) + 1 })
+      .update({ [field]: currentValue + 1 })
       .eq("user_id", user.id)
       .eq("log_date", logDate)
       .select()

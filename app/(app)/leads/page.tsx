@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLeads, createLead, updateLead, deleteLead, Lead } from "@/hooks/useLeads";
@@ -311,7 +311,7 @@ function exportCSV(leads: Lead[]) {
 }
 
 // ── Main Leads Page ───────────────────────────────────────────────────────────
-export default function LeadsPage() {
+function LeadsPageContent() {
   const [filterStage, setFilterStage] = useState("all");
   const [filterNiche, setFilterNiche] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
@@ -443,5 +443,19 @@ export default function LeadsPage() {
         {showModal && <LeadModal lead={editingLead} onClose={handleClose} />}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function LeadsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ paddingTop: 24 }}>
+          <div className="card">Loading leads...</div>
+        </div>
+      }
+    >
+      <LeadsPageContent />
+    </Suspense>
   );
 }

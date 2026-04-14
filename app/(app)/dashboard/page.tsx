@@ -14,7 +14,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { ActionQueue } from "@/components/features/ActionQueue";
 import { RevenueWeather } from "@/components/features/RevenueWeather";
 import { StreakEngine } from "@/components/features/StreakEngine";
-import { EnergyMode } from "@/components/features/EnergyMode";
+import { useFocusTimer } from "@/components/features/FocusContext";
 import { Flame } from "lucide-react";
 
 // ── Animated counter ──────────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ export default function DashboardPage() {
   ];
 
   const p0Count = leads.filter(l => l.priority === "P0").length;
-  const [energyModeOpen, setEnergyModeOpen] = useState(false);
+  const { startSession } = useFocusTimer();
   
   // Map useDaily entries to DailyLog format for StreakEngine
   const dailyLogsParsed = entries.map(e => ({
@@ -276,15 +276,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {energyModeOpen && (
-        <EnergyMode
-          onClose={() => setEnergyModeOpen(false)}
-          leads={leads}
-          projects={projects}
-          dailyLog={dailyLogsParsed.find(d => d.log_date === today)}
-        />
-      )}
-
       {/* Action Queue */}
       <ActionQueue leads={leads} projects={projects} dailyLog={dailyLogsParsed.find(d => d.log_date === today)} />
 
@@ -295,7 +286,7 @@ export default function DashboardPage() {
           <div className="page-sub">Week of {new Date(ws).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</div>
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: 'center' }}>
-          <button className="btn btn-primary btn-sm" onClick={() => setEnergyModeOpen(true)} style={{ background: '#f97316' }}>
+          <button className="btn btn-primary btn-sm" onClick={startSession} style={{ background: '#f97316' }}>
             <Flame size={14} /> Start Focus Session
           </button>
           <div style={{ width: 1, background: "var(--border-subtle)", height: 32 }} />
