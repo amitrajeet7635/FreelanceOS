@@ -142,6 +142,7 @@ function LeadModal({
 // ── Lead Card ─────────────────────────────────────────────────────────────────
 function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
   const [confirming, setConfirming] = useState(false);
+  const currentPriority = lead.priority || 'P3';
   const nextStageId = NEXT_STAGE[lead.stage];
   const nextStage = nextStageId ? STAGES.find(s => s.id === nextStageId) : null;
 
@@ -175,6 +176,9 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
   const isStale = Object.keys(lead).includes('on_bench') ? !lead.on_bench && lead.stage !== 'client' && lead.stage !== 'lost' && daysSinceUpdate > 7 
                                                          : lead.stage !== 'client' && lead.stage !== 'lost' && daysSinceUpdate > 7;
   const isOverdue = lead.stage === 'dm_sent' && lead.follow_up_due && new Date(lead.follow_up_due) <= new Date();
+  const followUpLabel = lead.follow_up_due
+    ? new Date(lead.follow_up_due).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
+    : "";
 
   return (
     <motion.div
@@ -189,12 +193,12 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", display: 'flex', alignItems: 'center', gap: 6 }}>
-              {lead.priority === 'P0' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#E24B4A', display: 'inline-block' }} className="animate-pulse" />}
+              {currentPriority === 'P0' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#E24B4A', display: 'inline-block' }} className="animate-pulse" />}
               {lead.username.startsWith("@") ? "" : "@"}{lead.username}
             </span>
-            <PriorityBadge priority={lead.priority} size="sm" onClick={() => {
+            <PriorityBadge priority={currentPriority} size="sm" onClick={() => {
               const order: any[] = ['P0', 'P1', 'P2', 'P3'];
-              const idx = order.indexOf(lead.priority || 'P3');
+              const idx = order.indexOf(currentPriority);
               updateLead(lead._id, { priority: order[(idx + 1) % 4] });
             }} />
             <StageBadge stageId={lead.stage} />
@@ -209,6 +213,16 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
                 <Globe size={10} /> No site
               </span>
             )}
+            {lead.hasWebsite === "yes" && (
+              <span className="badge" style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.2)" }}>
+                <Globe size={10} /> Has site
+              </span>
+            )}
+            {lead.hasWebsite === "bad" && (
+              <span className="badge" style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)" }}>
+                <Globe size={10} /> Bad site
+              </span>
+            )}
             {lead.ai_score !== undefined && (
               <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)' }} title={lead.ai_score_reason}>
                 AI Score: {lead.ai_score}
@@ -216,7 +230,7 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
             )}
             {lead.follow_up_due && !isOverdue && (
               <span className="badge" style={{ background: 'rgba(56,189,248,0.1)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)' }}>
-                Follow-up: {formatDate(lead.follow_up_due)}
+                Follow-up: {followUpLabel}
               </span>
             )}
             {isOverdue && (

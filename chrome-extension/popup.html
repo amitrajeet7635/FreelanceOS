@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FreelanceOS Lead Capture</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup" id="popupRoot">
+      <header class="header-bar">
+        <div class="brand">
+          <span class="brand-dot"></span>
+          <span class="brand-text">FreelanceOS</span>
+        </div>
+        <button id="settingsBtn" class="icon-btn" title="Settings" aria-label="Open settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"></path>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V22a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.96 20.35a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 8.4a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V2a2 2 0 1 1 4 0v.09c0 .68.4 1.3 1.04 1.56a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.04c.26.64.88 1.04 1.56 1.04H22a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.04V15Z"></path>
+          </svg>
+        </button>
+      </header>
+
+      <main class="content" id="contentArea">
+        <section id="state-not-configured" class="state hidden">
+          <h2>Set up FreelanceOS connection to start capturing leads</h2>
+          <p>Connect to FreelanceOS first — click the settings gear.</p>
+          <button id="configureBtn" class="btn btn-primary">Configure →</button>
+        </section>
+
+        <section id="state-not-instagram" class="state hidden">
+          <h2>Navigate to an Instagram profile to capture a lead</h2>
+          <p id="notInstagramMessage">Open an Instagram profile to capture a lead</p>
+          <a class="link-line" href="https://www.instagram.com" target="_blank" rel="noreferrer">
+            <span>Open Instagram →</span>
+          </a>
+        </section>
+
+        <section id="state-loading" class="state hidden center-state">
+          <div class="spinner"></div>
+          <p>Reading profile...</p>
+        </section>
+
+        <section id="state-ready" class="state hidden">
+          <article class="profile-card">
+            <div class="avatar" id="avatarBox">IG</div>
+            <div class="profile-meta">
+              <div class="username" id="usernameLabel">@username</div>
+              <div class="display-name" id="displayNameLabel"></div>
+              <a class="profile-link" id="profileUrlLink" target="_blank" rel="noreferrer">View profile</a>
+            </div>
+            <div class="followers-badge" id="followersBadge">—</div>
+          </article>
+
+          <section class="group">
+            <label class="field-label" for="followersInput">Followers</label>
+            <input id="followersInput" class="field" type="text" />
+
+            <label class="field-label" for="bioInput">Bio</label>
+            <textarea id="bioInput" class="field" rows="3"></textarea>
+
+            <label class="field-label">Has website</label>
+            <div class="pill-row" id="websiteToggle">
+              <button class="pill website-pill" data-value="yes" type="button">Yes</button>
+              <button class="pill website-pill" data-value="no" type="button">No</button>
+              <button class="pill website-pill" data-value="unknown" type="button">Unknown</button>
+            </div>
+          </section>
+
+          <section class="group">
+            <label class="field-label" for="nicheSelect">Niche</label>
+            <select id="nicheSelect" class="field"></select>
+
+            <label class="field-label">Priority</label>
+            <button id="priorityCycle" class="priority-cycle" type="button">
+              <span class="dot" id="priorityDot"></span>
+              <span id="priorityLabel">P3</span>
+            </button>
+
+            <label class="field-label" for="notesInput">Notes</label>
+            <textarea id="notesInput" class="field" rows="2" placeholder="Optional"></textarea>
+          </section>
+
+          <button id="addLeadBtn" class="btn btn-primary full">Add to FreelanceOS</button>
+        </section>
+
+        <section id="state-success" class="state hidden center-state">
+          <div class="icon success-icon">✓</div>
+          <h2 id="successTitle">Lead added!</h2>
+          <div class="stage-badge">Found</div>
+          <button id="addAnotherBtn" class="btn btn-secondary">Add Another</button>
+          <a class="link-line" id="viewInAppLink" target="_blank" rel="noreferrer">View in FreelanceOS →</a>
+        </section>
+
+        <section id="state-duplicate" class="state hidden center-state">
+          <div class="icon warning-icon">⚠</div>
+          <h2 id="duplicateTitle">Already in your pipeline</h2>
+          <div class="stage-badge" id="duplicateStage">Existing stage</div>
+          <a class="link-line" id="viewLeadLink" target="_blank" rel="noreferrer">View Lead →</a>
+        </section>
+
+        <section id="state-error" class="state hidden center-state">
+          <div class="icon error-icon">✕</div>
+          <h2>Something went wrong</h2>
+          <p id="errorMessage">Try again.</p>
+          <button id="tryAgainBtn" class="btn btn-outline-danger">Try Again</button>
+        </section>
+      </main>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

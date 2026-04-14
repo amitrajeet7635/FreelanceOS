@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "FreelanceOS Lead Capture",
+  "version": "1.0.0",
+  "description": "Capture Instagram leads directly into your FreelanceOS pipeline",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "https://www.instagram.com/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["https://www.instagram.com/*"]
+    }
+  ],
+  "__testing_checklist_comment": [
+    "[ ] Extension icon is active (not grayed out) on instagram.com/username/ pages",
+    "[ ] Extension icon is grayed out on all non-Instagram pages",
+    "[ ] Popup shows NOT_INSTAGRAM message on instagram.com/explore/ and feed pages",
+    "[ ] Popup shows profile data correctly on a public profile page",
+    "[ ] Follower count \"12.4K\" \\u2192 parsed correctly as 12400",
+    "[ ] Follower count \"1,234,567\" \\u2192 parsed correctly as 1234567",
+    "[ ] Profile with no bio \\u2192 bio field empty but no crash",
+    "[ ] Profile with external website link \\u2192 hasWebsite shows \"yes\"",
+    "[ ] Profile with only WhatsApp/Facebook link \\u2192 hasWebsite shows \"no\"",
+    "[ ] Adding a new lead \\u2192 appears in FreelanceOS Leads page with stage \"Found\"",
+    "[ ] Adding a duplicate lead \\u2192 shows DUPLICATE state with current stage",
+    "[ ] Invalid API key \\u2192 shows human-readable error",
+    "[ ] FreelanceOS offline \\u2192 shows \"Can't reach FreelanceOS\" message",
+    "[ ] Settings save correctly persists across popup close/reopen",
+    "[ ] Test Connection in options \\u2192 shows success/failure clearly",
+    "[ ] Recent leads list shows last 10 added leads in options page"
+  ]
+}

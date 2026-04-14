@@ -4,7 +4,7 @@ export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; b
   P0: { label: 'P0', color: '#E24B4A', bg: '#FCEBEB', description: 'Critical — respond NOW' },
   P1: { label: 'P1', color: '#EF9F27', bg: '#FAEEDA', description: 'Hot — follow up today' },
   P2: { label: 'P2', color: '#378ADD', bg: '#E6F1FB', description: 'Warm — standard queue' },
-  P3: { label: 'P3', color: '#888780', bg: '#F1EFE8', description: 'Cold — background batch' },
+  P3: { label: 'P3', color: '#22C55E', bg: '#EAF9F0', description: 'Cold — background batch' },
 };
 
 export interface CalendarEvent {
