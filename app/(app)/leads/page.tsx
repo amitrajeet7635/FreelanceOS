@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useLeads, createLead, updateLead, deleteLead, Lead } from "@/hooks/useLeads";
 import { createProject } from "@/hooks/useProjects";
 import { STAGES, NICHES, NEXT_STAGE } from "@/lib/constants";
 import { formatDate, formatRelative, todayISO } from "@/lib/utils";
+import { parseLeadNoteKeywords } from "@/lib/keywordParser";
+import { PriorityBadge } from "@/components/features/PriorityBadge";
+import { TheBench } from "@/components/features/TheBench";
+import { SmartTextarea } from "@/components/features/SmartTextarea";
 import {
   Plus, Search, Filter, ExternalLink, ChevronRight, Trash2,
-  Edit3, X, Check, Instagram, Globe, Loader2, Download,
+  Edit3, X, Check, Instagram, Globe, Loader2, Download, Archive
 } from "lucide-react";
 
 // ── Stage Badge ───────────────────────────────────────────────────────────────
@@ -32,7 +37,7 @@ function LeadModal({
   const blank = { username: "", niche: "Pet/Grooming", followers: "", hasWebsite: "no" as const, notes: "", igLink: "" };
   const [form, setForm] = useState(lead ? {
     username: lead.username, niche: lead.niche, followers: lead.followers || "",
-    hasWebsite: lead.hasWebsite, notes: lead.notes || "", igLink: lead.igLink || "",
+    hasWebsite: lead.hasWebsite as any, notes: lead.notes || "", igLink: lead.igLink || "",
   } : blank);
   const [saving, setSaving] = useState(false);
 
@@ -41,10 +46,22 @@ function LeadModal({
   const handleSave = async () => {
     if (!form.username.trim()) return;
     setSaving(true);
+
+    const parsed = parseLeadNoteKeywords(form.notes);
+    const finalForm = {
+      ...form,
+      notes: parsed.cleanedNotes,
+      ...(parsed.priority && { priority: parsed.priority }),
+      ...(parsed.benchFlag && { on_bench: parsed.benchFlag }),
+      ...(parsed.dmFlag && { stage: "dm_sent", dmSentAt: new Date().toISOString() }),
+      ...(parsed.followUpDate && { follow_up_due: parsed.followUpDate }),
+      ...(parsed.tags && { tags: parsed.tags })
+    };
+
     if (lead) {
-      await updateLead(lead._id, form);
+      await updateLead(lead._id, finalForm);
     } else {
-      await createLead(form);
+      await createLead(finalForm);
     }
     setSaving(false);
     onClose();
@@ -102,9 +119,12 @@ function LeadModal({
         </div>
 
         <div className="form-group" style={{ marginBottom: 18 }}>
-          <label className="form-label">Notes / Observations</label>
-          <textarea className="form-control" value={form.notes} onChange={e => set("notes", e.target.value)}
-            placeholder="What did you notice? Orders via DMs? Engagement level? Product type?" />
+          <label className="form-label">Notes (Use p0-p3, tod, tom, mon...)</label>
+          <SmartTextarea 
+            value={form.notes} 
+            onChange={v => set("notes", v)}
+            placeholder="Parsed keywords e.g., p1 tod bench..." 
+          />
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
@@ -137,7 +157,6 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
 
   const handleConvertToClient = async () => {
     await updateLead(lead._id, { stage: "client" });
-    // Auto-create a project
     await createProject({
       client: lead.username,
       service: "Landing Page",
@@ -148,6 +167,15 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
     });
   };
 
+  const handleBench = async () => {
+    await updateLead(lead._id, { on_bench: true });
+  }
+
+  const daysSinceUpdate = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / 86400000);
+  const isStale = Object.keys(lead).includes('on_bench') ? !lead.on_bench && lead.stage !== 'client' && lead.stage !== 'lost' && daysSinceUpdate > 7 
+                                                         : lead.stage !== 'client' && lead.stage !== 'lost' && daysSinceUpdate > 7;
+  const isOverdue = lead.stage === 'dm_sent' && lead.follow_up_due && new Date(lead.follow_up_due) <= new Date();
+
   return (
     <motion.div
       className="card"
@@ -155,14 +183,20 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      style={{ marginBottom: 8 }}
+      style={{ marginBottom: 8, ...(isStale ? { borderLeft: '4px solid #f59e0b' } : {}) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", display: 'flex', alignItems: 'center', gap: 6 }}>
+              {lead.priority === 'P0' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#E24B4A', display: 'inline-block' }} className="animate-pulse" />}
               {lead.username.startsWith("@") ? "" : "@"}{lead.username}
             </span>
+            <PriorityBadge priority={lead.priority} size="sm" onClick={() => {
+              const order: any[] = ['P0', 'P1', 'P2', 'P3'];
+              const idx = order.indexOf(lead.priority || 'P3');
+              updateLead(lead._id, { priority: order[(idx + 1) % 4] });
+            }} />
             <StageBadge stageId={lead.stage} />
             <span className="badge" style={{ background: "var(--bg-overlay)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>
               {lead.niche}
@@ -173,6 +207,21 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
             {lead.hasWebsite === "no" && (
               <span className="badge" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
                 <Globe size={10} /> No site
+              </span>
+            )}
+            {lead.ai_score !== undefined && (
+              <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)' }} title={lead.ai_score_reason}>
+                AI Score: {lead.ai_score}
+              </span>
+            )}
+            {lead.follow_up_due && !isOverdue && (
+              <span className="badge" style={{ background: 'rgba(56,189,248,0.1)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)' }}>
+                Follow-up: {formatDate(lead.follow_up_due)}
+              </span>
+            )}
+            {isOverdue && (
+              <span className="badge" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
+                Overdue follow-up
               </span>
             )}
           </div>
@@ -194,6 +243,9 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
               <Instagram size={14} />
             </a>
           )}
+          <button className="btn-icon" onClick={handleBench} title="Move to Bench">
+            <Archive size={14} />
+          </button>
           {nextStage && lead.stage !== "call" && (
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -262,14 +314,47 @@ function exportCSV(leads: Lead[]) {
 export default function LeadsPage() {
   const [filterStage, setFilterStage] = useState("all");
   const [filterNiche, setFilterNiche] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>();
 
   const { leads, isLoading } = useLeads({ stage: filterStage, niche: filterNiche, search });
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (searchParams?.get("new") === "true") {
+      setShowModal(true);
+      router.replace("/leads");
+    }
+  }, [searchParams, router]);
 
   const handleEdit = (lead: Lead) => { setEditingLead(lead); setShowModal(true); };
   const handleClose = () => { setShowModal(false); setEditingLead(undefined); };
+
+  const sortedFilteredLeads = useMemo(() => {
+    let list = leads;
+    if (filterPriority !== 'all') {
+      list = list.filter(l => (l.priority || 'P3') === filterPriority);
+    }
+    
+    // exclude bench from main list if we are not explicitly searching or something? 
+    // actually just exclude bench since they are shown in bench
+    list = list.filter(l => !l.on_bench);
+
+    // Sort: P0 > P1 > P2 > P3 > updatedAt desc
+    const pWeight: Record<string, number> = { 'P0': 4, 'P1': 3, 'P2': 2, 'P3': 1 };
+    list.sort((a, b) => {
+      const wa = pWeight[a.priority || 'P3'] || 1;
+      const wb = pWeight[b.priority || 'P3'] || 1;
+      if (wa !== wb) return wb - wa;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+
+    return list;
+  }, [leads, filterPriority]);
 
   return (
     <div style={{ paddingTop: 24 }}>
@@ -302,32 +387,30 @@ export default function LeadsPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           <Filter size={13} color="var(--text-muted)" />
+          
+          <select className="form-control" style={{ width: "auto" }} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
+            <option value="all">All Priorities</option>
+            <option value="P0">P0 (Critical)</option>
+            <option value="P1">P1 (Hot)</option>
+            <option value="P2">P2 (Warm)</option>
+            <option value="P3">P3 (Cold)</option>
+          </select>
+
           <select className="form-control" style={{ width: "auto" }} value={filterStage} onChange={e => setFilterStage(e.target.value)}>
             <option value="all">All stages</option>
             {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
+
           <select className="form-control" style={{ width: "auto" }} value={filterNiche} onChange={e => setFilterNiche(e.target.value)}>
             <option value="all">All niches</option>
             {NICHES.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>
-        {(filterStage !== "all" || filterNiche !== "all" || search) && (
-          <button className="btn btn-ghost btn-sm" onClick={() => { setFilterStage("all"); setFilterNiche("all"); setSearch(""); }}>
+        {(filterStage !== "all" || filterNiche !== "all" || filterPriority !== "all" || search) && (
+          <button className="btn btn-ghost btn-sm" onClick={() => { setFilterStage("all"); setFilterNiche("all"); setFilterPriority("all"); setSearch(""); }}>
             <X size={12} /> Clear
           </button>
         )}
-      </div>
-
-      {/* Stage filter chips */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-        <button className={`chip${filterStage === "all" ? " active" : ""}`} onClick={() => setFilterStage("all")}>
-          All
-        </button>
-        {STAGES.map(s => (
-          <button key={s.id} className={`chip${filterStage === s.id ? " active" : ""}`} onClick={() => setFilterStage(s.id)}>
-            {s.label}
-          </button>
-        ))}
       </div>
 
       {/* Lead list */}
@@ -335,22 +418,25 @@ export default function LeadsPage() {
         <div style={{ display: "flex", justifyContent: "center", padding: "3rem" }}>
           <Loader2 size={24} className="spinner" color="var(--text-muted)" />
         </div>
-      ) : leads.length === 0 ? (
+      ) : sortedFilteredLeads.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon"><ExternalLink size={32} /></div>
           <div className="empty-state-title">No leads yet</div>
-          <div className="empty-state-sub">Start prospecting on Instagram using the Strategy tab, then add leads here.</div>
+          <div className="empty-state-sub">Adjust your filters or add a new lead.</div>
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
             <Plus size={14} /> Add your first lead
           </button>
         </div>
       ) : (
         <AnimatePresence mode="popLayout">
-          {leads.map(lead => (
+          {sortedFilteredLeads.map(lead => (
             <LeadCard key={lead._id} lead={lead} onEdit={handleEdit} />
           ))}
         </AnimatePresence>
       )}
+
+      {/* The Bench */}
+      <TheBench leads={leads} />
 
       {/* Modal */}
       <AnimatePresence>

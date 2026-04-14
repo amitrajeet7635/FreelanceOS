@@ -44,8 +44,15 @@ export async function POST(req: Request) {
       has_website:   body.hasWebsite || "no",
       notes:         body.notes || null,
       ig_link:       body.igLink || null,
-      stage:         "found",
-      stage_history: [{ stage: "found", changed_at: new Date().toISOString() }],
+      stage:         body.stage || "found",
+      stage_history: [{ stage: body.stage || "found", changed_at: new Date().toISOString() }],
+      dm_sent_at:    body.stage === "dm_sent" ? new Date().toISOString() : null,
+      priority:      body.priority || null,
+      on_bench:      body.on_bench || false,
+      follow_up_due: body.follow_up_due || null,
+      tags:          body.tags || null,
+      ai_score:      body.ai_score || null,
+      ai_score_reason: body.ai_score_reason || null,
     }])
     .select()
     .single();

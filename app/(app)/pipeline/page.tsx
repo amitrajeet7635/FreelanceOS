@@ -6,6 +6,7 @@ import { useLeads, updateLead, Lead } from "@/hooks/useLeads";
 import { STAGES, NEXT_STAGE } from "@/lib/constants";
 import { ChevronRight, GripVertical, Instagram, Globe, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { PriorityBadge } from "@/components/features/PriorityBadge";
 
 function KanbanCard({
   lead,
@@ -17,6 +18,8 @@ function KanbanCard({
   const stage = STAGES.find(s => s.id === lead.stage)!;
   const nextId = NEXT_STAGE[lead.stage];
   const nextStage = nextId ? STAGES.find(s => s.id === nextId) : null;
+  const pColors: Record<string, string> = { P0: '#E24B4A', P1: '#EF9F27', P2: '#378ADD', P3: 'transparent' };
+  const borderColor = pColors[lead.priority || 'P3'] || 'transparent';
 
   return (
     <Draggable draggableId={lead._id} index={index}>
@@ -30,7 +33,7 @@ function KanbanCard({
             opacity: snapshot.isDragging ? 0.9 : 1,
           }}
         >
-          <div className="kanban-card">
+          <div className="kanban-card" style={borderColor !== 'transparent' ? { borderLeft: `4px solid ${borderColor}` } : {}}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
               <span
                 {...provided.dragHandleProps}
@@ -39,8 +42,9 @@ function KanbanCard({
                 <GripVertical size={13} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2 }} className="truncate">
-                  {lead.username.startsWith("@") ? "" : "@"}{lead.username}
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} className="truncate">
+                  <span>{lead.username.startsWith("@") ? "" : "@"}{lead.username}</span>
+                  {(lead.priority && lead.priority !== 'P3') && <PriorityBadge priority={lead.priority} size="sm" />}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>
                   {lead.niche}

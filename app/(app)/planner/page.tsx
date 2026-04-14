@@ -1,7 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, Flame } from "lucide-react";
+import { useState } from "react";
+import { EnergyMode } from "@/components/features/EnergyMode";
+import { useLeads } from "@/hooks/useLeads";
+import { useProjects } from "@/hooks/useProjects";
+import { useDaily, useSettings } from "@/hooks/useDaily";
+import { todayISO, weekStartISO, pct } from "@/lib/utils";
+import { DEFAULT_GOALS } from "@/lib/constants";
 
 const SCHEDULE = [
   { day: "Mon", focus: "Lead Discovery", dms: 0, tasks: ["Build list of 30 target accounts", "Like 3 posts on each account", "Log all accounts with notes"], peak: false },
@@ -31,12 +38,63 @@ const SAFETY_RULES = [
 
 export default function PlannerPage() {
   const today = new Date().toLocaleDateString("en-IN", { weekday: "long" }).slice(0, 3);
+  const [energyModeOpen, setEnergyModeOpen] = useState(false);
+
+  const { leads } = useLeads();
+  const { projects } = useProjects();
+  const { entries } = useDaily();
+  const { settings } = useSettings();
+  const goals = settings || DEFAULT_GOALS;
+
+  const ws = weekStartISO();
+  const todayIso = todayISO();
+  const weekEntries = entries.filter(e => e.date >= ws);
+  const wkDMs = weekEntries.reduce((s, e) => s + (e.dms || 0), 0);
+  const goalDMs = goals.weeklyDMs;
+  const progress = pct(wkDMs, goalDMs);
+
+  const dailyLogsParsed = entries.map(e => ({
+    id: e.date,
+    user_id: "",
+    log_date: e.date,
+    dms: e.dms || 0,
+    replies: e.replies || 0,
+    leads_qualified: e.leads || 0,
+    calls_booked: e.calls || 0,
+    clients_closed: 0,
+    revenue_earned: 0,
+    note: "",
+    created_at: e.date,
+    updated_at: e.date
+  }));
 
   return (
     <div style={{ paddingTop: 24 }}>
-      <div style={{ marginBottom: 16 }}>
-        <div className="page-title">Weekly Planner</div>
-        <div className="page-sub">7-day execution schedule · 90 mins/day · 110+ DMs/week</div>
+      {energyModeOpen && (
+        <EnergyMode
+          onClose={() => setEnergyModeOpen(false)}
+          leads={leads}
+          projects={projects}
+          dailyLog={dailyLogsParsed.find(d => d.log_date === todayIso)}
+        />
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
+        <div>
+          <div className="page-title">Weekly Planner</div>
+          <div className="page-sub">7-day execution schedule · 90 mins/day · {goalDMs}+ DMs/week</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <button className="btn btn-primary" onClick={() => setEnergyModeOpen(true)} style={{ background: '#f97316' }}>
+            <Flame size={14} /> Start Focus Session
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 100, height: 6, borderRadius: 3, background: 'var(--border-subtle)', overflow: 'hidden' }}>
+              <div style={{ width: `${progress}%`, height: '100%', background: '#10b981' }} />
+            </div>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{wkDMs} / {goalDMs} DMs</span>
+          </div>
+        </div>
       </div>
 
       {/* Week strip */}
@@ -57,18 +115,18 @@ export default function PlannerPage() {
                 textAlign: "center",
               }}
             >
-              <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: isToday ? "rgba(255,255,255,0.8)" : s.peak ? "var(--accent)" : "var(--text-muted)", marginBottom: 4 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: isToday ? "var(--text-inverse)" : s.peak ? "var(--accent)" : "var(--text-muted)", marginBottom: 4, opacity: isToday ? 0.7 : 1 }}>
                 {s.day}
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: isToday ? "#fff" : "var(--text-primary)", marginBottom: 4, lineHeight: 1.2 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: isToday ? "var(--text-inverse)" : "var(--text-primary)", marginBottom: 4, lineHeight: 1.2 }}>
                 {s.focus}
               </div>
               {s.dms > 0 ? (
-                <div style={{ fontSize: 20, fontWeight: 800, color: isToday ? "#fff" : "var(--accent)", lineHeight: 1 }}>
-                  {s.dms}<span style={{ fontSize: 9, fontWeight: 400, color: isToday ? "rgba(255,255,255,0.7)" : "var(--text-muted)", marginLeft: 2 }}>DMs</span>
+                <div style={{ fontSize: 20, fontWeight: 800, color: isToday ? "var(--text-inverse)" : "var(--accent)", lineHeight: 1 }}>
+                  {s.dms}<span style={{ fontSize: 9, fontWeight: 400, color: isToday ? "var(--text-inverse)" : "var(--text-muted)", marginLeft: 2, opacity: isToday ? 0.8 : 1 }}>DMs</span>
                 </div>
               ) : (
-                <div style={{ fontSize: 10, color: isToday ? "rgba(255,255,255,0.6)" : "var(--text-muted)" }}>No DMs</div>
+                <div style={{ fontSize: 10, color: isToday ? "var(--text-inverse)" : "var(--text-muted)", opacity: isToday ? 0.7 : 1 }}>No DMs</div>
               )}
             </motion.div>
           );

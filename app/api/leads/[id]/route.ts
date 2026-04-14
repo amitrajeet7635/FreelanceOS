@@ -22,6 +22,12 @@ export async function PATCH(
   if (body.hasWebsite  !== undefined) update.has_website  = body.hasWebsite;
   if (body.notes       !== undefined) update.notes        = body.notes || null;
   if (body.igLink      !== undefined) update.ig_link      = body.igLink || null;
+  if (body.priority      !== undefined) update.priority       = body.priority;
+  if (body.on_bench      !== undefined) update.on_bench       = body.on_bench;
+  if (body.follow_up_due !== undefined) update.follow_up_due  = body.follow_up_due;
+  if (body.tags          !== undefined) update.tags           = body.tags;
+  if (body.ai_score      !== undefined) update.ai_score       = body.ai_score;
+  if (body.ai_score_reason !== undefined) update.ai_score_reason = body.ai_score_reason;
 
   // Stage change — append history entry
   if (body.stage !== undefined) {

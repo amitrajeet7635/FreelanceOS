@@ -4,21 +4,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Target, GitBranch, FolderKanban,
-  BookOpen, Calendar, Settings,
+  BookOpen, Calendar as CalendarIcon, Settings,
+  CalendarDays, Sparkles
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLeads } from "@/hooks/useLeads";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboard },
   { href: "/leads",     label: "Leads",      icon: Target           },
   { href: "/pipeline",  label: "Pipeline",   icon: GitBranch        },
   { href: "/projects",  label: "Projects",   icon: FolderKanban     },
+  { href: "/calendar",  label: "Calendar",   icon: CalendarDays     },
+  { href: "/ai-studio", label: "AI Studio",  icon: Sparkles         },
   { href: "/strategy",  label: "Strategy",   icon: BookOpen         },
-  { href: "/planner",   label: "Planner",    icon: Calendar         },
+  { href: "/planner",   label: "Planner",    icon: CalendarIcon     },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { leads } = useLeads();
+
+  const p0Count = leads.filter(l => l.priority === 'P0').length;
+  const staleCount = leads.filter(l => {
+    if (l.stage === 'client' || l.stage === 'lost' || l.on_bench) return false;
+    const daysSince = Math.floor((Date.now() - new Date(l.updatedAt).getTime()) / 86400000);
+    return daysSince > 7;
+  }).length;
 
   return (
     <aside className="sidebar">
@@ -53,7 +65,13 @@ export default function Sidebar() {
                 />
               )}
               <Icon size={16} strokeWidth={1.8} />
-              <span>{label}</span>
+              <span style={{ flex: 1 }}>{label}</span>
+              {href === '/leads' && (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {p0Count > 0 && <span style={{ background: 'var(--danger)', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 12, fontWeight: 700 }}>{p0Count}</span>}
+                  {staleCount > 0 && <span style={{ background: '#f59e0b', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 12, fontWeight: 700 }}>{staleCount}</span>}
+                </div>
+              )}
             </Link>
           );
         })}

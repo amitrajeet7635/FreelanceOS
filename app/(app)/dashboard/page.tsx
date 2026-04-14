@@ -11,6 +11,11 @@ import {
   Plus, Minus, RotateCcw, TrendingUp, BarChart2,
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { ActionQueue } from "@/components/features/ActionQueue";
+import { RevenueWeather } from "@/components/features/RevenueWeather";
+import { StreakEngine } from "@/components/features/StreakEngine";
+import { EnergyMode } from "@/components/features/EnergyMode";
+import { Flame } from "lucide-react";
 
 // ── Animated counter ──────────────────────────────────────────────────────────
 function AnimCounter({ value, color }: { value: number; color: string }) {
@@ -244,20 +249,61 @@ export default function DashboardPage() {
     { label: "Clients Won", value: wkClients, goal: goals.weeklyClients, color: "#3b82f6", icon: Briefcase     },
   ];
 
+  const p0Count = leads.filter(l => l.priority === "P0").length;
+  const [energyModeOpen, setEnergyModeOpen] = useState(false);
+  
+  // Map useDaily entries to DailyLog format for StreakEngine
+  const dailyLogsParsed = entries.map(e => ({
+    id: e.date,
+    user_id: "",
+    log_date: e.date,
+    dms: e.dms || 0,
+    replies: e.replies || 0,
+    leads_qualified: e.leads || 0,
+    calls_booked: e.calls || 0,
+    clients_closed: 0,
+    revenue_earned: 0,
+    note: "",
+    created_at: e.date,
+    updated_at: e.date
+  }));
+
   return (
     <div style={{ paddingTop: 24 }}>
+      {p0Count > 0 && (
+        <div style={{ padding: 12, borderRadius: 8, background: 'rgba(226, 75, 74, 0.1)', color: '#E24B4A', border: '1px solid rgba(226, 75, 74, 0.2)', marginBottom: 24, fontSize: 13, fontWeight: 600 }}>
+          🔴 {p0Count} P0 lead(s) need immediate response
+        </div>
+      )}
+
+      {energyModeOpen && (
+        <EnergyMode
+          onClose={() => setEnergyModeOpen(false)}
+          leads={leads}
+          projects={projects}
+          dailyLog={dailyLogsParsed.find(d => d.log_date === today)}
+        />
+      )}
+
+      {/* Action Queue */}
+      <ActionQueue leads={leads} projects={projects} dailyLog={dailyLogsParsed.find(d => d.log_date === today)} />
+
       {/* Weekly summary sub label */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
           <div className="page-title">This Week&apos;s Performance</div>
           <div className="page-sub">Week of {new Date(ws).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 12, alignItems: 'center' }}>
+          <button className="btn btn-primary btn-sm" onClick={() => setEnergyModeOpen(true)} style={{ background: '#f97316' }}>
+            <Flame size={14} /> Start Focus Session
+          </button>
+          <div style={{ width: 1, background: "var(--border-subtle)", height: 32 }} />
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Total Earned</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--success)" }}>{formatCurrency(earned)}</div>
           </div>
-          <div style={{ width: 1, background: "var(--border-subtle)" }} />
+          <div style={{ width: 1, background: "var(--border-subtle)", height: 32 }} />
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Active Pipeline</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--accent)" }}>{formatCurrency(pipeline)}</div>
@@ -273,9 +319,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Tracker + Pipeline */}
-      <div className="grid-2" style={{ marginBottom: 0 }}>
-        <DailyTracker goals={goals} />
-        <PipelineOverview onStageClick={() => {}} />
+      <div className="grid-2" style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <DailyTracker goals={goals} />
+          <StreakEngine dailyLogs={dailyLogsParsed} streakMinDMs={10} todayDMs={(todayEntry as any)?.dms || 0} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <PipelineOverview onStageClick={() => {}} />
+          <RevenueWeather leads={leads} projects={projects} />
+        </div>
       </div>
 
       {/* Quick notes */}

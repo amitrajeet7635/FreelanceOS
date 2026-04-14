@@ -4,7 +4,9 @@ import useSWR, { mutate } from "swr";
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
-export interface Project {
+import { ProjectV2Extensions } from "@/lib/types";
+
+export interface Project extends Partial<ProjectV2Extensions> {
   _id: string;
   client: string;
   service: string;

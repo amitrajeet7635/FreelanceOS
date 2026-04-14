@@ -4,7 +4,9 @@ import useSWR, { mutate } from "swr";
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
-export interface Lead {
+import { LeadV2Extensions } from "@/lib/types";
+
+export interface Lead extends Partial<LeadV2Extensions> {
   _id: string;
   username: string;
   niche: string;
