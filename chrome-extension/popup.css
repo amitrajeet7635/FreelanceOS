@@ -31,10 +31,11 @@ body {
   color: var(--text-primary);
   font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
   animation: fade-in 150ms ease-out;
+  overflow-x: hidden;
 }
 
 .popup {
-  width: 380px;
+  width: 100%;
   max-height: 520px;
   background: var(--bg-primary);
 }
@@ -94,6 +95,7 @@ body {
 .content {
   max-height: 472px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 14px 16px;
 }
 
@@ -104,6 +106,11 @@ body {
 
 .hidden {
   display: none;
+}
+
+.state.hidden,
+.center-state.hidden {
+  display: none !important;
 }
 
 .center-state {
@@ -152,6 +159,10 @@ p {
   align-items: center;
 }
 
+.profile-meta {
+  min-width: 0;
+}
+
 .avatar {
   width: 40px;
   height: 40px;
@@ -176,9 +187,14 @@ p {
 }
 
 .profile-link {
+  display: block;
+  width: 100%;
   font-size: 11px;
   color: var(--text-secondary);
   text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .profile-link:hover {
@@ -192,6 +208,11 @@ p {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 4px 8px;
+  white-space: nowrap;
+  max-width: 112px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 
 .group {

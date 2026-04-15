@@ -6,6 +6,7 @@
 -- ── Leads ─────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS leads (
   id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   username      TEXT        NOT NULL,
   niche         TEXT        NOT NULL,
   followers     TEXT,
@@ -13,6 +14,9 @@ CREATE TABLE IF NOT EXISTS leads (
   notes         TEXT,
   ig_link       TEXT,
   stage         TEXT        NOT NULL DEFAULT 'found',
+  priority      TEXT        NOT NULL DEFAULT 'P3',
+  source        TEXT        NOT NULL DEFAULT 'other',
+  estimated_value NUMERIC,
   dm_sent_at    TIMESTAMPTZ,
   stage_history JSONB       NOT NULL DEFAULT '[]',
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),

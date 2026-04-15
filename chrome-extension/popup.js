@@ -62,6 +62,7 @@ const usernameLabel = document.getElementById("usernameLabel");
 const displayNameLabel = document.getElementById("displayNameLabel");
 const followersBadge = document.getElementById("followersBadge");
 const avatarBox = document.getElementById("avatarBox");
+const usernameInput = document.getElementById("usernameInput");
 const followersInput = document.getElementById("followersInput");
 const bioInput = document.getElementById("bioInput");
 const notesInput = document.getElementById("notesInput");
@@ -162,6 +163,7 @@ function applyScrapedData(data) {
   profileUrlLink.textContent = data.profileUrl;
   profileUrlLink.href = data.profileUrl;
   followersBadge.textContent = data.followers ? `${data.followers} followers` : "followers unknown";
+  usernameInput.value = data.username || "";
   followersInput.value = data.followers || "";
   bioInput.value = data.bio || "";
   notesInput.value = "";
@@ -194,15 +196,15 @@ async function scrapeCurrentTab(tabId) {
 }
 
 function buildLeadData() {
+  const usernameValue = usernameInput.value.trim().replace(/^@+/, "");
+
   return {
-    username: String(scraped?.username || "").trim(),
+    username: usernameValue,
     followers: followersInput.value.trim() || null,
-    bio: bioInput.value.trim() || null,
+    notes: notesInput.value.trim() || null,
     profileUrl: scraped?.profileUrl || null,
     hasWebsite: websiteValue,
     niche: nicheSelect.value,
-    priority: priorityValue,
-    notes: notesInput.value.trim() || null,
   };
 }
 
@@ -326,6 +328,11 @@ priorityCycle.addEventListener("click", cyclePriority);
 
 document.querySelectorAll(".website-pill").forEach((button) => {
   button.addEventListener("click", () => setWebsitePills(button.dataset.value || "unknown"));
+});
+
+usernameInput?.addEventListener("input", () => {
+  const current = usernameInput.value.trim().replace(/^@+/, "");
+  usernameLabel.textContent = current ? `@${current}` : "@username";
 });
 
 bootstrap();

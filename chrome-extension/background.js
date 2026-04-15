@@ -63,6 +63,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "SAVE_LEAD") {
     const { leadData, apiKey, freelanceOsUrl } = message;
 
+    console.log("[Extension] Submitting lead:", { username: leadData.username, niche: leadData.niche });
+
     fetch(`${freelanceOsUrl}/api/ext/add-lead`, {
       method: "POST",
       headers: {
@@ -73,6 +75,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })
       .then(async (res) => {
         const payload = await res.json().catch(() => ({}));
+
+        console.log(`[Extension] API response: ${res.status}`, payload);
 
         if (!res.ok) {
           if (res.status === 409 && payload?.error === "duplicate") {
@@ -118,6 +122,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
       })
       .catch(() => {
+        console.error("[Extension] Network error connecting to FreelanceOS");
         sendResponse({
           success: false,
           error: "Can't reach FreelanceOS. Is it running?",

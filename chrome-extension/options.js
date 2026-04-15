@@ -111,6 +111,16 @@ async function testConnection() {
         return;
       }
 
+      if (res.status === 503 && data?.error) {
+        renderConnection(data.error, false);
+        return;
+      }
+
+      if (res.status === 500 && data?.error) {
+        renderConnection(data.error, false);
+        return;
+      }
+
       renderConnection("FreelanceOS returned an error. Try again in a moment.", false);
       return;
     }

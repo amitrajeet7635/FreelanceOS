@@ -48,6 +48,17 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (keyError) {
+      const keyErrorMessage = keyError.message || "";
+      if (keyErrorMessage.toLowerCase().includes("invalid api key")) {
+        return jsonWithCors(
+          {
+            error:
+              "SUPABASE_SERVICE_ROLE_KEY is invalid for this project. Update server env and restart FreelanceOS.",
+          },
+          503
+        );
+      }
+
       return jsonWithCors({ error: keyError.message }, 500);
     }
 
@@ -84,7 +95,7 @@ export async function POST(req: Request) {
           user_id: keyRow.user_id,
           username,
           followers: body?.followers ? String(body.followers) : null,
-          notes: body?.bio ? String(body.bio) : null,
+          notes: body?.notes ? String(body.notes) : null,
           ig_link: body?.profileUrl ? String(body.profileUrl) : null,
           has_website: hasWebsiteValue,
           niche: body?.niche ? String(body.niche) : "Other",
@@ -102,11 +113,14 @@ export async function POST(req: Request) {
       .single();
 
     if (insertError) {
+      console.error("Insert error:", insertError);
       return jsonWithCors({ error: insertError.message }, 500);
     }
 
     return jsonWithCors({ success: true, lead: insertedLead }, 200);
-  } catch {
-    return jsonWithCors({ error: "Failed to add lead" }, 500);
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    const message = error instanceof Error ? error.message : "Failed to add lead";
+    return jsonWithCors({ error: message }, 500);
   }
 }

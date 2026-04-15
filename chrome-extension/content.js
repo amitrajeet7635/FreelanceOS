@@ -39,6 +39,41 @@ function parseFollowersToNumber(rawFollowers) {
   return Math.round(value);
 }
 
+function formatFollowersCompact(rawFollowers, followersCount) {
+  const raw = String(rawFollowers || "").trim();
+  const hasCompactSuffix = /[KMB]$/i.test(raw.replace(/\s+/g, ""));
+
+  if (hasCompactSuffix) {
+    return raw.toUpperCase();
+  }
+
+  if (!Number.isFinite(followersCount) || followersCount === null) {
+    return raw || null;
+  }
+
+  const count = Number(followersCount);
+  if (count >= 1_000_000_000) {
+    const n = (count / 1_000_000_000).toFixed(1).replace(/\.0$/, "");
+    return `${n}B`;
+  }
+  if (count >= 1_000_000) {
+    const n = (count / 1_000_000).toFixed(1).replace(/\.0$/, "");
+    return `${n}M`;
+  }
+  if (count >= 1_000) {
+    const n = (count / 1_000).toFixed(1).replace(/\.0$/, "");
+    return `${n}K`;
+  }
+
+  return String(count);
+}
+
+function normalizeFollowerString(value) {
+  if (!value) return null;
+  const compact = String(value).trim().replace(/\s+/g, "");
+  return compact || null;
+}
+
 function decodeInstagramTracker(url) {
   try {
     const parsed = new URL(url);
@@ -53,19 +88,54 @@ function decodeInstagramTracker(url) {
 function parseMetaFollowers(description) {
   if (!description) return null;
   const match = description.match(/([\d.,]+\s*[KMk]?)\s*Followers/i);
-  return match ? match[1].replace(/\s+/g, "") : null;
+  return match ? normalizeFollowerString(match[1]) : null;
 }
 
-function extractBioFromOgDescription(description) {
-  if (!description) return null;
-  const parts = description.split(" - ");
-  if (parts.length > 1) {
-    const bio = parts.slice(1).join(" - ").trim();
-    return bio || null;
+function cleanBioCandidate(text, username, displayName) {
+  if (!text) return null;
+
+  const normalized = String(text)
+    .replace(/\s+/g, " ")
+    .replace(/^["'\-•\s]+|["'\-•\s]+$/g, "")
+    .trim();
+
+  if (!normalized) return null;
+
+  const lower = normalized.toLowerCase();
+  const usernameLower = (username || "").toLowerCase();
+  const displayLower = (displayName || "").toLowerCase();
+
+  if (!lower) return null;
+  if (usernameLower && lower === usernameLower) return null;
+  if (usernameLower && lower === `@${usernameLower}`) return null;
+  if (displayLower && lower === displayLower) return null;
+  if (/^[\d.,]+\s*[km]?$/i.test(lower)) return null;
+
+  if (
+    lower.includes("see instagram photos and videos from") ||
+    lower.includes("instagram photos and videos") ||
+    /followers?\b|following\b|posts?\b/i.test(lower)
+  ) {
+    return null;
   }
 
-  const cleaned = description.replace(/^[^,]+Followers,\s*[^,]+Following,\s*[^-]+Posts\s*/i, "").trim();
-  return cleaned || null;
+  return normalized;
+}
+
+function extractBioFromOgDescription(description, username, displayName) {
+  if (!description) return null;
+
+  const statsPrefix = /^\s*[\d.,]+\s*[KMkMm]?\s*Followers?,\s*[\d.,]+\s*[KMkMm]?\s*Following,?\s*[\d.,]+\s*[KMkMm]?\s*Posts?\s*-?\s*/i;
+  const withoutStats = description.replace(statsPrefix, "").trim();
+
+  const dashSplit = withoutStats.split(" - ");
+  if (dashSplit.length > 1) {
+    const candidate = dashSplit.slice(1).join(" - ").trim();
+    const cleaned = cleanBioCandidate(candidate, username, displayName);
+    if (cleaned) return cleaned;
+  }
+
+  return cleanBioCandidate(withoutStats, username, displayName);
 }
 
 function detectNiche(text) {
@@ -100,10 +170,69 @@ function findFollowersInDom() {
 
     const match = text.match(matcher);
     if (match) {
-      return match[1].replace(/\s+/g, "");
+      return normalizeFollowerString(match[1]);
     }
   }
 
+  return null;
+}
+
+function findFollowersFromProfileLinks(username) {
+  if (!username) return null;
+
+  const anchors = Array.from(document.querySelectorAll("a[href]"));
+  const targetPath = `/${username}/followers`;
+
+  for (let i = 0; i < anchors.length; i += 1) {
+    const href = anchors[i].getAttribute("href") || "";
+    if (!href.startsWith(targetPath)) continue;
+
+    const titleNode = anchors[i].querySelector("span[title]");
+    const titleValue = titleNode?.getAttribute("title");
+    if (titleValue) {
+      return normalizeFollowerString(titleValue);
+    }
+
+    const text = anchors[i].textContent || "";
+    const match = text.match(/([\d.,]+\s*[KMk]?)/);
+    if (match) {
+      return normalizeFollowerString(match[1]);
+    }
+  }
+
+  return null;
+}
+
+function findBioFromDom() {
+  const header = document.querySelector("main header") || document.querySelector("header");
+  if (!header) return null;
+
+  const badChunks = [
+    "follow",
+    "following",
+    "message",
+    "contact",
+    "edit profile",
+    "professional dashboard",
+    "ad tools",
+  ];
+
+  const nodes = header.querySelectorAll("h1, h2, span, div[dir='auto']");
+  let best = null;
+
+  for (let i = 0; i < nodes.length; i += 1) {
+    const raw = nodes[i]?.textContent?.trim();
+    if (!raw) continue;
+    if (raw.length < 2 || raw.length > 500) continue;
+
+    const lower = raw.toLowerCase();
+    if (/followers?\b|following\b|posts?\b/i.test(lower)) continue;
+    if (badChunks.some((chunk) => lower === chunk || lower.includes(chunk))) continue;
+
+    if (!best || raw.length > best.length) best = raw;
+  }
+
+  if (best) return best;
   return null;
 }
 
@@ -139,13 +268,14 @@ function findWebsiteSignal() {
 
 function scrapeInstagramProfile() {
   const currentUrl = window.location.href;
+  const cleanUrl = `${window.location.origin}${window.location.pathname}`;
 
   const hasInvalidPrefix = INVALID_PATH_PREFIXES.some((prefix) => window.location.pathname.startsWith(prefix));
-  if (hasInvalidPrefix || !PROFILE_URL_REGEX.test(currentUrl)) {
+  if (hasInvalidPrefix || !PROFILE_URL_REGEX.test(cleanUrl)) {
     return { isProfilePage: false };
   }
 
-  const username = window.location.pathname.replace(/\//g, "").trim();
+  const username = window.location.pathname.split("/").filter(Boolean)[0] || "";
   if (!username) {
     return { isProfilePage: false };
   }
@@ -169,11 +299,16 @@ function scrapeInstagramProfile() {
   }
 
   const metaFollowers = parseMetaFollowers(ogDescription);
+  const linkFollowers = findFollowersFromProfileLinks(username);
   const domFollowers = findFollowersInDom();
-  const followers = metaFollowers || domFollowers || null;
+  const followers = metaFollowers || linkFollowers || domFollowers || null;
   const followersCount = parseFollowersToNumber(followers);
+  const compactFollowers = formatFollowersCompact(followers, followersCount);
 
-  const bio = extractBioFromOgDescription(ogDescription);
+  const metaBio = extractBioFromOgDescription(ogDescription, username, displayName);
+  const domBioRaw = findBioFromDom();
+  const domBio = cleanBioCandidate(domBioRaw, username, displayName);
+  const bio = metaBio || domBio || null;
   const website = findWebsiteSignal();
   const detectedNiche = detectNiche(`${bio || ""} ${username}`);
 
@@ -181,7 +316,7 @@ function scrapeInstagramProfile() {
     username,
     displayName,
     profileUrl,
-    followers,
+  followers: compactFollowers,
     followersCount,
     bio,
     hasWebsite: website.hasWebsite,
