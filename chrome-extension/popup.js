@@ -205,6 +205,7 @@ function buildLeadData() {
     profileUrl: scraped?.profileUrl || null,
     hasWebsite: websiteValue,
     niche: nicheSelect.value,
+    priority: priorityValue,
   };
 }
 
@@ -241,8 +242,9 @@ async function submitLead() {
       }
 
       if (response?.isDuplicate) {
+        const stage = response?.existingLead?.stage || "Found";
         duplicateTitle.textContent = `@${leadData.username} is already in your pipeline`;
-        duplicateStage.textContent = response?.existingLead?.stage || "Found";
+        duplicateStage.textContent = `Status: ${stage} • ${response?.error || "Duplicate lead detected"}`;
         viewLeadLink.href = `${storage.freelanceOsUrl}/leads`;
         showState(STATES.DUPLICATE);
         return;

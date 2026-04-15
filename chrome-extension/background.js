@@ -79,11 +79,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         console.log(`[Extension] API response: ${res.status}`, payload);
 
         if (!res.ok) {
-          if (res.status === 409 && payload?.error === "duplicate") {
+          if (res.status === 409 && payload?.isDuplicate) {
             sendResponse({
               success: false,
               isDuplicate: true,
-              error: "Already in your pipeline",
+              error: payload?.error || "This lead already exists in your pipeline",
               existingLead: payload.existingLead,
             });
             return;

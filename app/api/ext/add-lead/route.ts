@@ -67,7 +67,8 @@ export async function POST(req: Request) {
     }
 
     const username = String(body?.username || "").trim();
-  const hasWebsiteValue = body?.hasWebsite === "yes" ? "yes" : "no";
+    const hasWebsiteValue = body?.hasWebsite === "yes" ? "yes" : "no";
+    const priorityValue = ["P0", "P1", "P2", "P3"].includes(body?.priority) ? body.priority : "P3";
 
     if (!username) {
       return jsonWithCors({ error: "Username is required" }, 400);
@@ -85,7 +86,11 @@ export async function POST(req: Request) {
     }
 
     if (existingLead) {
-      return jsonWithCors({ error: "duplicate", existingLead }, 409);
+      return jsonWithCors({
+        error: `@${username} is already in your pipeline (${existingLead.stage})`,
+        isDuplicate: true,
+        existingLead,
+      }, 409);
     }
 
     const { data: insertedLead, error: insertError } = await supabase
@@ -104,7 +109,7 @@ export async function POST(req: Request) {
               ? Number(body.estimatedValue)
               : null,
           stage: "found",
-          priority: "P3",
+          priority: priorityValue,
           source: "instagram_extension",
           created_at: new Date().toISOString(),
         },
