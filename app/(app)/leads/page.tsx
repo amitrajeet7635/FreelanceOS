@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLeads, createLead, updateLead, deleteLead, Lead } from "@/hooks/useLeads";
 import { createProject } from "@/hooks/useProjects";
+import { useFocusTimer } from "@/components/features/FocusContext";
 import { STAGES, NICHES, NEXT_STAGE } from "@/lib/constants";
 import { formatDate, formatRelative, todayISO } from "@/lib/utils";
 import { parseLeadNoteKeywords } from "@/lib/keywordParser";
@@ -34,6 +35,7 @@ function LeadModal({
   lead?: Lead;
   onClose: () => void;
 }) {
+  const { isActive: focusSessionActive, sessionStats, setSessionStats } = useFocusTimer();
   const blank = { username: "", niche: "Pet/Grooming", followers: "", hasWebsite: "no" as const, notes: "", igLink: "" };
   const [form, setForm] = useState(lead ? {
     username: lead.username, niche: lead.niche, followers: lead.followers || "",
@@ -61,6 +63,10 @@ function LeadModal({
     if (lead) {
       await updateLead(lead._id, finalForm);
     } else {
+      // Track lead addition in focus session
+      if (focusSessionActive) {
+        setSessionStats(s => ({ ...s, leads: s.leads + 1 }));
+      }
       await createLead(finalForm);
     }
     setSaving(false);
@@ -140,8 +146,9 @@ function LeadModal({
 }
 
 // ── Lead Card ─────────────────────────────────────────────────────────────────
-function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
-  const [confirming, setConfirming] = useState(false);
+const LeadCard = forwardRef<HTMLDivElement, { lead: Lead; onEdit: (l: Lead) => void }>(
+  ({ lead, onEdit }, ref) => {
+    const [confirming, setConfirming] = useState(false);
   const currentPriority = lead.priority || 'P3';
   const nextStageId = NEXT_STAGE[lead.stage];
   const nextStage = nextStageId ? STAGES.find(s => s.id === nextStageId) : null;
@@ -182,6 +189,7 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
 
   return (
     <motion.div
+      ref={ref}
       className="card"
       layout
       initial={{ opacity: 0, y: 10 }}
@@ -312,7 +320,9 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
       </div>
     </motion.div>
   );
-}
+  }
+);
+LeadCard.displayName = 'LeadCard';
 
 // ── Export CSV ────────────────────────────────────────────────────────────────
 function exportCSV(leads: Lead[]) {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ActionQueue } from './ActionQueue';
 import { StreakEngine } from './StreakEngine';
@@ -29,9 +30,10 @@ export function EnergyMode({
   isRunning: boolean;
   onToggleRunning: () => void;
   onEndSession: () => void;
-  sessionStats: { dms: number; replies: number };
-  setSessionStats: React.Dispatch<React.SetStateAction<{ dms: number; replies: number }>>;
+  sessionStats: { dms: number; replies: number; leads: number };
+  setSessionStats: React.Dispatch<React.SetStateAction<{ dms: number; replies: number; leads: number }>>;
 }) {
+  const router = useRouter();
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
   const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -105,12 +107,33 @@ export function EnergyMode({
             <div className="card">
               <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Quick Log</h3>
               <div style={{ display: 'flex', gap: 12 }}>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => handleLog('dms')}>+ DM</button>
-                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => handleLog('replies')}>+ Reply</button>
-                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => {
+                <button className="btn btn-primary" style={{ flex: 1, position: 'relative' }} onClick={() => handleLog('dms')}>
+                  + DM
+                  {sessionStats.dms > 0 && (
+                    <span style={{ position: 'absolute', top: -8, right: -8, background: '#E24B4A', color: '#fff', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
+                      {sessionStats.dms}
+                    </span>
+                  )}
+                </button>
+                <button className="btn btn-secondary" style={{ flex: 1, position: 'relative' }} onClick={() => handleLog('replies')}>
+                  + Reply
+                  {sessionStats.replies > 0 && (
+                    <span style={{ position: 'absolute', top: -8, right: -8, background: '#10B981', color: '#fff', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
+                      {sessionStats.replies}
+                    </span>
+                  )}
+                </button>
+                <button className="btn btn-secondary" style={{ flex: 1, position: 'relative' }} onClick={() => {
                   onClose();
-                  window.location.href = '/leads?new=true';
-                }}>+ Lead</button>
+                  router.push('/leads?new=true');
+                }}>
+                  + Lead
+                  {sessionStats.leads > 0 && (
+                    <span style={{ position: 'absolute', top: -8, right: -8, background: '#F59E0B', color: '#fff', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
+                      {sessionStats.leads}
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
 
