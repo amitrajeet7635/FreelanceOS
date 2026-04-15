@@ -197,11 +197,23 @@ async function scrapeCurrentTab(tabId) {
 
 function buildLeadData() {
   const usernameValue = usernameInput.value.trim().replace(/^@+/, "");
+  const bioValue = bioInput.value.trim();
+  const notesValue = notesInput.value.trim();
+  
+  // Combine bio and notes: if both exist, put bio first, then notes
+  let combinedNotes = "";
+  if (bioValue && notesValue) {
+    combinedNotes = `${bioValue}\n\n${notesValue}`;
+  } else if (bioValue) {
+    combinedNotes = bioValue;
+  } else if (notesValue) {
+    combinedNotes = notesValue;
+  }
 
   return {
     username: usernameValue,
     followers: followersInput.value.trim() || null,
-    notes: notesInput.value.trim() || null,
+    notes: combinedNotes || null,
     profileUrl: scraped?.profileUrl || null,
     hasWebsite: websiteValue,
     niche: nicheSelect.value,

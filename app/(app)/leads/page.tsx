@@ -119,11 +119,11 @@ function LeadModal({
         </div>
 
         <div className="form-group" style={{ marginBottom: 18 }}>
-          <label className="form-label">Notes (Use p0-p3, tod, tom, mon...)</label>
+          <label className="form-label">Bio / Notes (from Instagram or your notes)</label>
           <SmartTextarea 
             value={form.notes} 
             onChange={v => set("notes", v)}
-            placeholder="Parsed keywords e.g., p1 tod bench..." 
+            placeholder="e.g., their Instagram bio, or notes like: p1 tod bench..." 
           />
         </div>
 
@@ -240,9 +240,14 @@ function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: (l: Lead) => void }) {
             )}
           </div>
           {lead.notes && (
-            <p style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 4, fontStyle: "italic" }}>
-              &ldquo;{lead.notes}&rdquo;
-            </p>
+            <div style={{ marginBottom: 8, padding: "8px 10px", background: "var(--bg-overlay)", borderRadius: 6, borderLeft: "3px solid var(--accent)" }}>
+              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, color: "var(--text-muted)", marginBottom: 4 }}>
+                Bio / Description
+              </div>
+              <p style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+                {lead.notes}
+              </p>
+            </div>
           )}
           <div style={{ display: "flex", gap: 10, fontSize: 11, color: "var(--text-muted)" }}>
             <span>Added {formatDate(lead.createdAt)}</span>
