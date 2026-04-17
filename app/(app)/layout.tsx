@@ -2,6 +2,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import { KeyboardManager } from "@/components/features/KeyboardManager";
 import { FocusProvider } from "@/components/features/FocusContext";
+import { GlobalTodoQuickPanel } from "@/components/features/GlobalTodoQuickPanel";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <main style={{ padding: "0 24px 40px", flex: 1 }}>
             {children}
           </main>
+          <GlobalTodoQuickPanel />
         </FocusProvider>
       </div>
     </div>

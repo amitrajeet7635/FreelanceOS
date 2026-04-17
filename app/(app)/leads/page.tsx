@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLeads, createLead, updateLead, deleteLead, Lead } from "@/hooks/useLeads";
 import { createProject } from "@/hooks/useProjects";
-import { useFocusTimer } from "@/components/features/FocusContext";
 import { STAGES, NICHES, NEXT_STAGE } from "@/lib/constants";
 import { formatDate, formatRelative, todayISO } from "@/lib/utils";
 import { parseLeadNoteKeywords } from "@/lib/keywordParser";
 import { PriorityBadge } from "@/components/features/PriorityBadge";
 import { TheBench } from "@/components/features/TheBench";
 import { SmartTextarea } from "@/components/features/SmartTextarea";
+import { PremiumDateInput } from "@/components/ui/PremiumDateInput";
 import {
   Plus, Search, Filter, ExternalLink, ChevronRight, Trash2,
   Edit3, X, Check, Instagram, Globe, Loader2, Download, Archive
@@ -35,11 +35,10 @@ function LeadModal({
   lead?: Lead;
   onClose: () => void;
 }) {
-  const { isActive: focusSessionActive, sessionStats, setSessionStats } = useFocusTimer();
-  const blank = { username: "", niche: "Pet/Grooming", followers: "", hasWebsite: "no" as const, notes: "", igLink: "" };
+  const blank = { username: "", niche: "Pet/Grooming", followers: "", hasWebsite: "no" as const, notes: "", igLink: "", followUpDate: "" };
   const [form, setForm] = useState(lead ? {
     username: lead.username, niche: lead.niche, followers: lead.followers || "",
-    hasWebsite: lead.hasWebsite as any, notes: lead.notes || "", igLink: lead.igLink || "",
+    hasWebsite: lead.hasWebsite as any, notes: lead.notes || "", igLink: lead.igLink || "", followUpDate: lead.follow_up_due?.split("T")[0] || "",
   } : blank);
   const [saving, setSaving] = useState(false);
 
@@ -50,23 +49,23 @@ function LeadModal({
     setSaving(true);
 
     const parsed = parseLeadNoteKeywords(form.notes);
+    const manualFollowUpDate = form.followUpDate?.trim();
+    const resolvedFollowUpDate = parsed.followUpDate || manualFollowUpDate;
     const finalForm = {
       ...form,
       notes: parsed.cleanedNotes,
       ...(parsed.priority && { priority: parsed.priority }),
       ...(parsed.benchFlag && { on_bench: parsed.benchFlag }),
       ...(parsed.dmFlag && { stage: "dm_sent", dmSentAt: new Date().toISOString() }),
-      ...(parsed.followUpDate && { follow_up_due: parsed.followUpDate }),
+      ...(resolvedFollowUpDate ? { follow_up_due: resolvedFollowUpDate } : {}),
       ...(parsed.tags && { tags: parsed.tags })
     };
+
+    delete (finalForm as any).followUpDate;
 
     if (lead) {
       await updateLead(lead._id, finalForm);
     } else {
-      // Track lead addition in focus session
-      if (focusSessionActive) {
-        setSessionStats(s => ({ ...s, leads: s.leads + 1 }));
-      }
       await createLead(finalForm);
     }
     setSaving(false);
@@ -122,6 +121,14 @@ function LeadModal({
           <label className="form-label">Instagram Profile Link</label>
           <input className="form-control" placeholder="https://instagram.com/username" value={form.igLink}
             onChange={e => set("igLink", e.target.value)} />
+        </div>
+
+        <div className="form-group" style={{ marginBottom: 14 }}>
+          <label className="form-label">Custom Follow-up Date</label>
+          <PremiumDateInput
+            value={form.followUpDate}
+            onChange={v => set("followUpDate", v)}
+          />
         </div>
 
         <div className="form-group" style={{ marginBottom: 18 }}>

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
 
 export function SmartTextarea({ 
   value, 
@@ -12,7 +11,6 @@ export function SmartTextarea({
   placeholder?: string;
   style?: React.CSSProperties;
 }) {
-  const [manualDate, setManualDate] = useState<string>('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleScroll = () => {
@@ -54,18 +52,6 @@ export function SmartTextarea({
       return <span key={i}>{part}</span>;
     });
   };
-
-  const handleManualDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setManualDate(val);
-    if (val) {
-      // Append or replace follow date
-      const replaced = value.replace(/\/follow\s+\d{4}-\d{2}-\d{2}/gi, '').trim();
-      onChange(`${replaced} /follow ${val}`);
-    }
-  };
-
-  const containsDateWord = /\b(?:tod(?:ay)?|tom(?:orrow)?|mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b/i.test(value);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     let text = e.target.value;
@@ -143,30 +129,6 @@ export function SmartTextarea({
         />
       </div>
 
-      <div style={{ display: 'inline-flex', position: 'relative' }}>
-        <button 
-          className="btn btn-sm btn-ghost" 
-          onClick={(e) => e.preventDefault()}
-          style={{ padding: '4px 8px', fontSize: 11, pointerEvents: 'none' }}
-        >
-          <Calendar size={12} />
-          {containsDateWord ? 'Date recognized' : 'Add manual date'}
-        </button>
-        <input 
-          type="date"
-          style={{ 
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            opacity: 0,
-            cursor: 'pointer'
-          }}
-          value={manualDate}
-          onChange={handleManualDateChange}
-        />
-      </div>
     </div>
   );
 }

@@ -72,24 +72,28 @@ function MetricCard({
 }
 
 // ── Quick Notes ───────────────────────────────────────────────────────────────
-function QuickNotes() {
+function QuickNotes({ expand = false, onContentChange }: { expand?: boolean; onContentChange?: (content: string) => void }) {
   const { data } = useNotes();
   const [content, setContent] = useState(data?.content || "");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (data?.content !== undefined) setContent(data.content);
-  }, [data?.content]);
+    if (data?.content !== undefined) {
+      setContent(data.content);
+      onContentChange?.(data.content);
+    }
+  }, [data?.content, onContentChange]);
 
   const handleChange = useCallback((v: string) => {
     setContent(v);
+    onContentChange?.(v);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => saveNotes(v), 800);
-  }, []);
+  }, [onContentChange]);
 
   return (
-    <div className="card" style={{ marginTop: 14 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>
+    <div className="card" style={{ padding: "12px 14px", height: expand ? "100%" : "auto", display: "flex", flexDirection: "column" }}>
+      <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
         Quick Notes
       </div>
       <textarea
@@ -97,7 +101,7 @@ function QuickNotes() {
         value={content}
         onChange={e => handleChange(e.target.value)}
         placeholder="Jot observations, follow-up reminders, ideas..."
-        style={{ minHeight: 90 }}
+        style={{ minHeight: expand ? 150 : 56, maxHeight: expand ? "none" : 92, lineHeight: 1.45, flex: expand ? 1 : undefined }}
       />
     </div>
   );
@@ -268,16 +272,44 @@ export default function DashboardPage() {
     updated_at: e.date
   }));
 
+  const actionQueueNode = (
+    <ActionQueue
+      leads={leads}
+      projects={projects}
+      dailyLog={dailyLogsParsed.find(d => d.log_date === today)}
+      withMargin={false}
+    />
+  );
+
   return (
     <div style={{ paddingTop: 24 }}>
-      {p0Count > 0 && (
-        <div style={{ padding: 12, borderRadius: 8, background: 'rgba(226, 75, 74, 0.1)', color: '#E24B4A', border: '1px solid rgba(226, 75, 74, 0.2)', marginBottom: 24, fontSize: 13, fontWeight: 600 }}>
-          🔴 {p0Count} P0 lead(s) need immediate response
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 300 }}>
+          {p0Count > 0 ? (
+            <div style={{ padding: 12, borderRadius: 8, background: 'rgba(226, 75, 74, 0.1)', color: '#E24B4A', border: '1px solid rgba(226, 75, 74, 0.2)', fontSize: 13, fontWeight: 600 }}>
+              🔴 {p0Count} P0 lead(s) need immediate response
+            </div>
+          ) : (
+            actionQueueNode
+          )}
         </div>
-      )}
+
+        <StreakEngine
+          dailyLogs={dailyLogsParsed}
+          streakMinDMs={10}
+          todayDMs={(todayEntry as any)?.dms || 0}
+          compact
+        />
+      </div>
 
       {/* Action Queue */}
-      <ActionQueue leads={leads} projects={projects} dailyLog={dailyLogsParsed.find(d => d.log_date === today)} />
+      {p0Count > 0 && (
+        <ActionQueue
+          leads={leads}
+          projects={projects}
+          dailyLog={dailyLogsParsed.find(d => d.log_date === today)}
+        />
+      )}
 
       {/* Weekly summary sub label */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -309,20 +341,13 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Tracker + Pipeline */}
-      <div className="grid-2" style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <DailyTracker goals={goals} />
-          <StreakEngine dailyLogs={dailyLogsParsed} streakMinDMs={10} todayDMs={(todayEntry as any)?.dms || 0} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <PipelineOverview onStageClick={() => {}} />
-          <RevenueWeather leads={leads} projects={projects} />
-        </div>
+      {/* Main 4-section layout */}
+      <div className="grid-2" style={{ marginBottom: 14, alignItems: 'stretch' }}>
+        <DailyTracker goals={goals} />
+        <PipelineOverview onStageClick={() => {}} />
+        <QuickNotes expand />
+        <RevenueWeather leads={leads} projects={projects} />
       </div>
-
-      {/* Quick notes */}
-      <QuickNotes />
 
       {/* Summary row */}
       <motion.div

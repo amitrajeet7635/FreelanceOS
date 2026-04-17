@@ -21,14 +21,17 @@ export interface Lead extends Partial<LeadV2Extensions> {
   updatedAt: string;
 }
 
-export function useLeads(params?: { stage?: string; niche?: string; search?: string }) {
+export function useLeads(params?: { stage?: string; niche?: string; search?: string; refreshInterval?: number }) {
   const qs = new URLSearchParams();
   if (params?.stage  && params.stage  !== "all") qs.set("stage",  params.stage);
   if (params?.niche  && params.niche  !== "all") qs.set("niche",  params.niche);
   if (params?.search && params.search.trim())    qs.set("search", params.search.trim());
 
   const key = `/api/leads${qs.toString() ? "?" + qs.toString() : ""}`;
-  const { data, error, isLoading } = useSWR<Lead[]>(key, fetcher);
+  const { data, error, isLoading } = useSWR<Lead[]>(key, fetcher, {
+    refreshInterval: params?.refreshInterval ?? 0,
+    revalidateOnFocus: true,
+  });
 
   return {
     leads: data || [],

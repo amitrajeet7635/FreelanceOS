@@ -24,10 +24,23 @@ export function useRevenueWeather(leads: Lead[], projects: Project[]): RevenueWe
     // 4. Confirmed pipeline
     const confirmedPipeline = projects
       .filter(p => p.status !== 'paid')
-      .reduce((sum, p) => sum + (p.budget - (p.paid_amount || 0)), 0);
+      .reduce((sum, p) => {
+        const remaining = (p.budget || 0) - (p.paid_amount || 0);
+        return sum + Math.max(0, remaining);
+      }, 0);
 
     // 5. Earned to date
-    const earnedToDate = projects.reduce((sum, p) => sum + (p.paid_amount || 0), 0);
+    const earnedToDate = projects.reduce((sum, p) => {
+      const paidAmount = p.paid_amount || 0;
+
+      // Backward compatibility: if old rows mark project as paid but paid_amount wasn't tracked,
+      // treat full budget as earned so dashboard reflects real earnings.
+      if (p.status === 'paid' && paidAmount === 0) {
+        return sum + (p.budget || 0);
+      }
+
+      return sum + paidAmount;
+    }, 0);
 
     return {
       conservative: Math.round(totalExpected * 0.6),

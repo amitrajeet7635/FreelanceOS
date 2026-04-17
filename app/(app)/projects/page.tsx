@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProjects, createProject, updateProject, deleteProject, Project } from "@/hooks/useProjects";
 import { PROJECT_STATUS, SERVICES } from "@/lib/constants";
 import { formatCurrency, daysUntil, formatDate } from "@/lib/utils";
+import { PremiumDateInput } from "@/components/ui/PremiumDateInput";
 import { Plus, Trash2, Edit3, Check, Clock, AlertTriangle, Loader2, X } from "lucide-react";
 
 function StatusBadge({ statusId }: { statusId: string }) {
@@ -97,7 +98,7 @@ function ProjectModal({ project, onClose }: { project?: Project; onClose: () => 
           </div>
           <div className="form-group">
             <label className="form-label">Deadline</label>
-            <input className="form-control" type="date" value={form.deadline} onChange={e => set("deadline", e.target.value)} />
+            <PremiumDateInput value={form.deadline} onChange={v => set("deadline", v)} />
           </div>
         </div>
         <div className="form-group" style={{ marginBottom: 18 }}>

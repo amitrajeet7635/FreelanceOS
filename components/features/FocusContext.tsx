@@ -1,13 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useInterval } from "@/hooks/useInterval";
 import { useLeads } from "@/hooks/useLeads";
 import { useProjects } from "@/hooks/useProjects";
 import { useDaily } from "@/hooks/useDaily";
 import { todayISO } from "@/lib/utils";
 import { EnergyMode } from "@/components/features/EnergyMode";
-import { Play, Pause, Maximize2, Square } from "lucide-react";
+import { Play, Pause, Maximize2, Square, X } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface FocusContextType {
@@ -84,9 +84,29 @@ export const useFocusTimer = () => useContext(FocusContext);
 
 function GlobalFocusRenderer() {
   const { isActive, isMinimized, setMinimized, endSession, timeLeft, isRunning, setIsRunning, sessionStats, setSessionStats, showSummary, setShowSummary } = useFocusTimer();
-  const { leads = [] } = useLeads();
+  const { leads = [] } = useLeads({ refreshInterval: isActive ? 4000 : 0 });
   const { projects = [] } = useProjects();
   const { entries = [] } = useDaily();
+  const previousLeadsCountRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isActive) {
+      previousLeadsCountRef.current = null;
+      return;
+    }
+
+    if (previousLeadsCountRef.current === null) {
+      previousLeadsCountRef.current = leads.length;
+      return;
+    }
+
+    const delta = leads.length - previousLeadsCountRef.current;
+    if (delta > 0) {
+      setSessionStats(prev => ({ ...prev, leads: prev.leads + delta }));
+    }
+
+    previousLeadsCountRef.current = leads.length;
+  }, [isActive, leads.length, setSessionStats]);
 
   const todayIso = todayISO();
   let dailyLog = entries.find(e => e.date === todayIso);
@@ -179,9 +199,9 @@ function GlobalFocusRenderer() {
 function SessionSummary({ sessionStats, onClose }: { sessionStats: { dms: number; replies: number; leads: number }, onClose: () => void }) {
   const totalActions = sessionStats.dms + sessionStats.replies + sessionStats.leads;
   const statCards = [
-    { label: "DMs", value: sessionStats.dms, color: "#3B82F6" },
-    { label: "Replies", value: sessionStats.replies, color: "#10B981" },
-    { label: "Leads", value: sessionStats.leads, color: "#F59E0B" },
+    { label: "DMs", value: sessionStats.dms, color: "var(--info)" },
+    { label: "Replies", value: sessionStats.replies, color: "var(--success)" },
+    { label: "Leads", value: sessionStats.leads, color: "var(--warning)" },
   ];
   
   return (
@@ -191,9 +211,9 @@ function SessionSummary({ sessionStats, onClose }: { sessionStats: { dms: number
       exit={{ opacity: 0 }}
       style={{ 
         position: 'fixed', inset: 0, zIndex: 10000, 
-        background: 'rgba(0, 0, 0, 0.6)', 
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        background: 'rgba(0, 0, 0, 0.45)', 
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 24
       }}
@@ -206,63 +226,137 @@ function SessionSummary({ sessionStats, onClose }: { sessionStats: { dms: number
         onClick={(e) => e.stopPropagation()}
         style={{ 
           width: '100%',
-          maxWidth: 620,
-          background: 'linear-gradient(165deg, rgba(15,23,42,0.95), rgba(2,6,23,0.95))',
-          borderRadius: 28,
-          padding: 36,
-          boxShadow: '0 28px 70px rgba(0,0,0,0.55)',
-          border: '1px solid rgba(148,163,184,0.18)',
+          maxWidth: 680,
+          background: 'linear-gradient(180deg, var(--bg-elevated), var(--bg-surface))',
+          borderRadius: 24,
+          padding: 34,
+          boxShadow: 'var(--shadow-lg)',
+          border: '1px solid var(--border-default)',
           textAlign: 'center',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)'
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
-        <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--accent)', marginBottom: 12, lineHeight: 1 }}>
-          🎯
+        <div
+          style={{
+            position: 'absolute',
+            top: -120,
+            right: -120,
+            width: 260,
+            height: 260,
+            borderRadius: '50%',
+            background: 'var(--accent-subtle)',
+            filter: 'blur(24px)',
+            pointerEvents: 'none'
+          }}
+        />
+
+        <div
+          style={{
+            position: 'absolute',
+            bottom: -120,
+            left: -120,
+            width: 220,
+            height: 220,
+            borderRadius: '50%',
+            background: 'var(--bg-overlay)',
+            filter: 'blur(22px)',
+            pointerEvents: 'none'
+          }}
+        />
+
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '6px 14px',
+            borderRadius: 999,
+            border: '1px solid var(--border-default)',
+            background: 'var(--bg-overlay)',
+            color: 'var(--text-secondary)',
+            fontSize: 12,
+            textTransform: 'uppercase',
+            letterSpacing: '0.09em',
+            fontWeight: 700,
+            marginBottom: 14
+          }}
+        >
+          Focus Session
         </div>
         
-        <h2 style={{ fontSize: 40, fontWeight: 800, color: '#E2E8F0', marginBottom: 8, letterSpacing: '-0.02em' }}>
+        <h2 style={{ fontSize: 46, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10, letterSpacing: '-0.03em', lineHeight: 1.05 }}>
           Session Complete!
         </h2>
         
-        <p style={{ fontSize: 16, color: '#94A3B8', marginBottom: 28, lineHeight: 1.5, maxWidth: 520, marginInline: 'auto' }}>
-          Great work on your focused session! Here's what you accomplished:
+        <p style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: 30, lineHeight: 1.6, maxWidth: 540, marginInline: 'auto' }}>
+          Solid execution — here’s your focus session performance snapshot.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
           {statCards.map(card => (
             <div
               key={card.label}
               style={{
-                background: 'rgba(15,23,42,0.7)',
+                background: 'var(--bg-overlay)',
                 borderRadius: 14,
-                padding: '16px 12px',
-                border: '1px solid rgba(148,163,184,0.2)'
+                padding: '16px 12px 14px',
+                border: '1px solid var(--border-subtle)'
               }}
             >
-              <div style={{ fontSize: 46, fontWeight: 800, color: card.color, marginBottom: 4, lineHeight: 1 }}>
+              <div style={{ fontSize: 54, fontWeight: 800, color: card.color, marginBottom: 4, lineHeight: 1, letterSpacing: '-0.02em' }}>
                 {card.value}
               </div>
-              <div style={{ fontSize: 12, color: '#94A3B8', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.08em' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.08em' }}>
                 {card.label}
               </div>
             </div>
           ))}
         </div>
 
-        <div style={{ background: 'rgba(15,23,42,0.78)', borderRadius: 14, padding: 18, marginBottom: 24, border: '1px solid rgba(148,163,184,0.2)' }}>
-          <div style={{ fontSize: 14, color: '#94A3B8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Total Actions</div>
-          <div style={{ fontSize: 52, fontWeight: 800, color: '#E2E8F0', lineHeight: 1 }}>
+        <div style={{ background: 'var(--bg-overlay)', borderRadius: 14, padding: 18, marginBottom: 24, border: '1px solid var(--border-subtle)' }}>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Total Actions</div>
+          <div style={{ fontSize: 64, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.03em' }}>
             {totalActions}
           </div>
         </div>
 
-        <button 
+        <button
           onClick={onClose}
-          className="btn btn-primary"
-          style={{ width: '100%', height: 52, fontSize: 16, fontWeight: 700, borderRadius: 12 }}
+          className="btn"
+          style={{
+            width: '100%',
+            height: 54,
+            fontSize: 14,
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            borderRadius: 12,
+            border: '1px solid var(--border-default)',
+            background: 'var(--bg-elevated)',
+            color: 'var(--text-primary)',
+            boxShadow: 'var(--shadow-md)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10
+          }}
         >
-          Close Summary
+          <span
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              border: '1px solid var(--border-default)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'var(--bg-overlay)'
+            }}
+          >
+            <X size={12} />
+          </span>
+          Close Focus Summary
         </button>
       </motion.div>
     </motion.div>

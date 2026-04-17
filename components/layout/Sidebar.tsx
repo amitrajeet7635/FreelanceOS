@@ -7,6 +7,7 @@ import {
   BookOpen, Calendar as CalendarIcon, Settings,
   CalendarDays, Sparkles
 } from "lucide-react";
+import { ListTodo } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLeads } from "@/hooks/useLeads";
 
@@ -15,6 +16,7 @@ const NAV = [
   { href: "/leads",     label: "Leads",      icon: Target           },
   { href: "/pipeline",  label: "Pipeline",   icon: GitBranch        },
   { href: "/projects",  label: "Projects",   icon: FolderKanban     },
+  { href: "/todos",     label: "Todos",      icon: ListTodo         },
   { href: "/calendar",  label: "Calendar",   icon: CalendarDays     },
   { href: "/ai-studio", label: "AI Studio",  icon: Sparkles         },
   { href: "/strategy",  label: "Strategy",   icon: BookOpen         },

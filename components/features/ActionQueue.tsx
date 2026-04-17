@@ -7,7 +7,17 @@ import { DailyLog } from '@/lib/types';
 import { Check, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function ActionQueue({ leads, projects, dailyLog }: { leads: Lead[], projects: Project[], dailyLog?: DailyLog }) {
+export function ActionQueue({
+  leads,
+  projects,
+  dailyLog,
+  withMargin = true,
+}: {
+  leads: Lead[];
+  projects: Project[];
+  dailyLog?: DailyLog;
+  withMargin?: boolean;
+}) {
   const allItems = useActionQueue(leads, projects, dailyLog);
   const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
   const router = useRouter();
@@ -19,14 +29,14 @@ export function ActionQueue({ leads, projects, dailyLog }: { leads: Lead[], proj
 
   if (items.length === 0) {
     return (
-      <div className="card" style={{ marginBottom: 24, textAlign: 'center', padding: '24px' }}>
+      <div className="card" style={{ marginBottom: withMargin ? 24 : 0, textAlign: 'center', padding: '24px' }}>
         <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>All clear! No actions needed right now 🎉</p>
       </div>
     );
   }
 
   return (
-    <div className="card" style={{ marginBottom: 24 }}>
+    <div className="card" style={{ marginBottom: withMargin ? 24 : 0 }}>
       <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>Today's Action Queue</h3>
       <AnimatePresence>
         {items.map(item => (
