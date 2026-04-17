@@ -32,7 +32,6 @@ export default function TodosPage() {
       toggleTodo(id);
       const nextContent = removeTodoFromNotesContent(notes?.content || "", todo.text);
       await saveNotes(nextContent);
-      syncFromNotes(nextContent);
       return;
     }
 
@@ -51,8 +50,8 @@ export default function TodosPage() {
         </button>
       </div>
 
-      <div className="grid-3" style={{ marginBottom: 14 }}>
-        {[{ label: "Total", value: stats.total }, { label: "Pending", value: stats.pending }, { label: "Completed", value: stats.completed }].map(card => (
+      <div className="grid-2" style={{ marginBottom: 14 }}>
+        {[{ label: "Total", value: stats.total }, { label: "Pending", value: stats.pending }].map(card => (
           <div key={card.label} className="metric-card">
             <div className="metric-label">{card.label}</div>
             <div className="metric-value">{card.value}</div>

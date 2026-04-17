@@ -25,7 +25,6 @@ export function GlobalTodoQuickPanel() {
       toggleTodo(id);
       const nextContent = removeTodoFromNotesContent(notes?.content || "", todo.text);
       await saveNotes(nextContent);
-      syncFromNotes(nextContent);
       return;
     }
 

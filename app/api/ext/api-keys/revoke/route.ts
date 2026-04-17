@@ -13,7 +13,7 @@ export async function DELETE() {
 
   const { error } = await supabase
     .from("extension_api_keys")
-    .update({ active: false })
+    .update({ active: false, key_name: null })
     .eq("user_id", user.id);
 
   if (error) {

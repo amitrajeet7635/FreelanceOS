@@ -89,11 +89,10 @@ export function useTodos() {
   }, []);
 
   const commitTodos = useCallback((updater: (prev: TodoItem[]) => TodoItem[]) => {
-    setTodos(prev => {
-      const next = updater(prev);
-      persistTodos(next);
-      return next;
-    });
+    const latest = loadTodos();
+    const next = updater(latest);
+    persistTodos(next);
+    setTodos(next);
   }, []);
 
   const addTodo = useCallback((text: string, source: TodoSource = "manual") => {

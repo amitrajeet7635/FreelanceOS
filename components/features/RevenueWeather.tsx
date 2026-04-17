@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Lead } from '@/hooks/useLeads';
 import { Project } from '@/hooks/useProjects';
 import { useRevenueWeather } from '@/hooks/useRevenueWeather';
@@ -6,13 +7,60 @@ import { Cloud, CloudSun, Sun, Info } from 'lucide-react';
 
 export function RevenueWeather({ leads, projects }: { leads: Lead[], projects: Project[] }) {
   const weather = useRevenueWeather(leads, projects);
+  const [showInfo, setShowInfo] = useState(false);
 
   return (
     <div className="card">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Revenue Weather</h3>
-        <div title="Based on lead probability and confirmed pipeline" style={{ cursor: 'help', color: 'var(--text-muted)' }}>
-          <Info size={14} />
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            aria-label="How Revenue Weather is calculated"
+            onMouseEnter={() => setShowInfo(true)}
+            onMouseLeave={() => setShowInfo(false)}
+            onFocus={() => setShowInfo(true)}
+            onBlur={() => setShowInfo(false)}
+            style={{
+              cursor: 'help',
+              color: 'var(--text-muted)',
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Info size={14} />
+          </button>
+
+          {showInfo && (
+            <div
+              role="tooltip"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: 260,
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid var(--border-default)',
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-secondary)',
+                fontSize: 11.5,
+                lineHeight: 1.5,
+                boxShadow: 'var(--shadow-lg)',
+                zIndex: 20,
+              }}
+            >
+              Forecast uses lead stage probabilities + estimated values.
+              <br />
+              <span style={{ color: 'var(--text-muted)' }}>
+                Conservative ≈ 60%, Likely ≈ 100%, Optimistic ≈ 140% of weighted forecast.
+              </span>
+            </div>
+          )}
         </div>
       </div>
       
