@@ -11,6 +11,19 @@ export async function PATCH(
 ) {
   const body = await req.json();
 
+  const isMilestonePayment = body.paymentStructure === "milestone";
+  const normalizedMilestones = Array.isArray(body.milestones)
+    ? body.milestones
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((m: any) => ({
+          id: m.id,
+          title: String(m.title || "").trim(),
+          price: Number(m.price) || 0,
+          dueDate: m.dueDate || "",
+          done: Boolean(m.done),
+        }))
+    : undefined;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const update: Record<string, any> = {};
   if (body.client   !== undefined) update.client   = body.client;
@@ -20,6 +33,23 @@ export async function PATCH(
   if (body.status   !== undefined) update.status   = body.status;
   if (body.notes    !== undefined) update.notes    = body.notes || null;
   if (body.leadId   !== undefined) update.lead_id  = body.leadId || null;
+  if (body.paid_amount !== undefined || body.paidAmount !== undefined) {
+    update.paid_amount = Math.max(0, Number(body.paid_amount ?? body.paidAmount) || 0);
+  }
+  if (body.paymentStructure !== undefined) update.payment_structure = body.paymentStructure;
+  if (normalizedMilestones !== undefined) update.milestones = normalizedMilestones;
+
+  if (isMilestonePayment && normalizedMilestones) {
+    update.budget = normalizedMilestones.reduce(
+      (sum: number, m: { price: number }) => sum + (m.price || 0),
+      0
+    );
+    if (update.paid_amount === undefined) {
+      update.paid_amount = normalizedMilestones
+        .filter((m: { done?: boolean }) => m.done)
+        .reduce((sum: number, m: { price: number }) => sum + (m.price || 0), 0);
+    }
+  }
 
   const supabase = createSupabaseServer();
   const { data, error } = await supabase

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Target, GitBranch, FolderKanban,
   BookOpen, Calendar as CalendarIcon, Settings,
-  CalendarDays, Sparkles
+  CalendarDays, Sparkles, ClipboardList
 } from "lucide-react";
 import { ListTodo } from "lucide-react";
 import { motion } from "framer-motion";
@@ -16,6 +16,7 @@ const NAV = [
   { href: "/leads",     label: "Leads",      icon: Target           },
   { href: "/pipeline",  label: "Pipeline",   icon: GitBranch        },
   { href: "/projects",  label: "Projects",   icon: FolderKanban     },
+  { href: "/daily-logs",label: "Daily Logs", icon: ClipboardList    },
   { href: "/todos",     label: "Todos",      icon: ListTodo         },
   { href: "/calendar",  label: "Calendar",   icon: CalendarDays     },
   { href: "/ai-studio", label: "AI Studio",  icon: Sparkles         },

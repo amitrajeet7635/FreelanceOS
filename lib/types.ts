@@ -54,12 +54,22 @@ export interface LeadV2Extensions {
   display_name?: string;
 }
 
+export interface ProjectMilestone {
+  id: string;
+  title: string;
+  price: number;
+  dueDate: string;
+  done?: boolean;
+}
+
+export type ProjectPaymentStructure = '50/50' | '100_upfront' | 'milestone' | 'custom';
+
 export interface ProjectV2Extensions {
   paid_amount: number;
-  payment_structure: '50/50' | '100_upfront' | 'milestone' | 'custom';
+  payment_structure: ProjectPaymentStructure;
   start_date?: string;
   delivery_date?: string;
-  milestones: Array<{ id: string; title: string; dueDate: string; done: boolean }>;
+  milestones: ProjectMilestone[];
 }
 
 export interface RevenueWeatherData {

@@ -87,6 +87,7 @@ export const NAV_LINKS = [
   { href: "/leads",      label: "Leads"      },
   { href: "/pipeline",   label: "Pipeline"   },
   { href: "/projects",   label: "Projects"   },
+  { href: "/daily-logs", label: "Daily Logs" },
   { href: "/strategy",   label: "Strategy"   },
   { href: "/planner",    label: "Planner"    },
   { href: "/settings",   label: "Settings"   },
