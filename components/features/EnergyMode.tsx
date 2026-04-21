@@ -42,13 +42,24 @@ export function EnergyMode({
     // update session stats
     setSessionStats(s => ({ ...s, [field]: s[field] + 1 }));
 
-    // POST to /api/daily-logs
-    await fetch('/api/daily-logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'increment', field })
-    });
-    mutate('/api/daily-logs?date=' + todayISO());
+    const date = todayISO();
+
+    // Persist to both counters used across dashboard + daily logs flows.
+    await Promise.allSettled([
+      fetch('/api/daily', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, field }),
+      }),
+      fetch('/api/daily-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'increment', field, date }),
+      }),
+    ]);
+
+    mutate('/api/daily');
+    mutate('/api/daily-logs?date=' + date);
   };
 
   return (
